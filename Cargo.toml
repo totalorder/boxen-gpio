@@ -8,3 +8,11 @@ edition = "2018"
 
 [dependencies]
 rppal = "0.12.0"
+
+[lib]
+name = "boxen_gpio"
+path = "src/lib.rs"
+
+[[bin]]
+name = "boxen-gpio"
+path = "src/main.rs"
