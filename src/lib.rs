@@ -1,8 +1,8 @@
 use rppal::gpio::{Gpio, Trigger, Level, InputPin, OutputPin};
 use std::error::Error;
 use std::thread;
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
+use crossbeam_channel;
+use crossbeam_channel::{Receiver,Sender};
 use std::time::{Duration, Instant};
 use std::collections::HashMap;
 use std::collections::LinkedList;
@@ -32,12 +32,17 @@ impl Led {
 }
 
 pub struct Button {
-    pin: u8
+    pin: u8,
+    initial_state: bool
 }
 
 impl Button {
     pub fn pin(&self) -> u8 {
         self.pin
+    }
+
+    pub fn initial_state(&self) -> bool {
+        self.initial_state
     }
 }
 
@@ -52,7 +57,7 @@ pub struct IO {
 
 impl IO {
     pub fn create(debounce: Duration) -> IO {
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = crossbeam_channel::unbounded();
         IO {
             buttons: HashMap::new(),
             deadlines: HashMap::new(),
@@ -70,6 +75,7 @@ impl IO {
             .expect("Failed to get pin")
             .into_input_pullup();
         let tx = self.tx.clone();
+        let initial_state = button.is_low();
         button
             .set_async_interrupt(
             Trigger::RisingEdge,
@@ -81,7 +87,8 @@ impl IO {
         self.buttons.insert(pin, button);
 
         Button {
-            pin
+            pin,
+            initial_state
         }
     }
 
@@ -105,7 +112,7 @@ impl IO {
     }
 
     pub fn listen(mut self) -> Receiver<(u8, bool)> {
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = crossbeam_channel::unbounded();
         thread::spawn(move || {
             loop {
                 let now = Instant::now();
@@ -147,30 +154,6 @@ impl IO {
         rx
     }
 }
-//
-// fn main() {
-//     println!("Hello, world!");
-//     let mut io = IO::create(Duration::from_millis(50));
-//     let mut led = io.create_led(24, 23);
-//     led.set_off();
-//     let yellow_button = io.create_button(27);
-//     let green_button = io.create_button(17);
-//
-//     let rx = io.listen();
-//     for (pin, pressed) in rx.iter() {
-//         println!("Button {} {}", pin, if pressed { "pressed" } else { "released" });
-//         if pressed {
-//             match pin {
-//                 pin if pin == yellow_button.pin => led.set_yellow(),
-//                 pin if pin == green_button.pin => led.set_green(),
-//                 _ => panic!("Received button press for unknown button")
-//             }
-//         } else {
-//             led.set_off();
-//         }
-//     }
-// }
-
 
 pub fn public_function() {
     println!("called rary's `public_function()`");

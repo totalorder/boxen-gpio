@@ -1,8 +1,6 @@
 use rppal::gpio::{Gpio, Trigger, Level, InputPin, OutputPin};
 use std::error::Error;
 use std::thread;
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
 use std::time::{Duration, Instant};
 use std::collections::HashMap;
 use std::collections::LinkedList;

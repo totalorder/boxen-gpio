@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 rppal = "0.12.0"
+crossbeam-channel = "0.5.1"
 
 [lib]
 name = "boxen_gpio"
