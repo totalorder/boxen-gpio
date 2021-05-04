@@ -12,7 +12,7 @@ fn main() {
     println!("Setting up button listeners");
     let mut io = IO::create(Duration::from_millis(50));
     let mut led = io.create_led(24, 23);
-    led.set_off();
+    led.set_yellow_blink();
     let yellow_button = io.create_button(27);
     let green_button = io.create_button(17);
 

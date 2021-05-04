@@ -8,13 +8,58 @@ use std::collections::HashMap;
 use std::collections::LinkedList;
 use std::ops::{Add, Sub};
 use std::process::exit;
+use std::sync::{Arc, Mutex};
+use std::fs::read_to_string;
+
+struct InnerBlinkingLed {
+    output_pin: OutputPin,
+    blinking: bool,
+}
+
+struct BlinkingLed {
+    inner: Arc<Mutex<InnerBlinkingLed>>
+}
+
+impl BlinkingLed {
+    fn set_high(&mut self) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.blinking = false;
+        inner.output_pin.set_high();
+    }
+
+    fn set_low(&mut self) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.blinking = false;
+        inner.output_pin.set_low();
+    }
+
+    fn clone(&self) -> BlinkingLed {
+        BlinkingLed {
+            inner: Arc::clone(&self.inner)
+        }
+    }
+}
 
 pub struct Led {
-    yellow: OutputPin,
-    green: OutputPin
+    yellow: BlinkingLed,
+    green: OutputPin,
 }
 
 impl Led {
+    fn new(yellow: OutputPin, green: OutputPin) -> Led {
+        let inner = InnerBlinkingLed {
+            output_pin: yellow,
+            blinking: false
+        };
+
+        Led {
+            yellow: BlinkingLed {
+                inner: Arc::new(Mutex::new(inner))
+            },
+            green,
+        }
+    }
+
     pub fn set_off(&mut self) {
         self.yellow.set_low();
         self.green.set_low();
@@ -28,6 +73,37 @@ impl Led {
     pub fn set_yellow(&mut self) {
         self.green.set_low();
         self.yellow.set_high();
+    }
+
+    pub fn set_yellow_blink(&mut self) {
+        self.green.set_low();
+
+        {
+            self.yellow.inner.lock().unwrap().blinking = true;
+        }
+
+        let yellow = self.yellow.clone();
+        thread::spawn(move || {
+            let mut yellow_on = true;
+            loop {
+                {
+                    let mut yellow_inner = yellow.inner.lock().unwrap();
+                    println!("Yellow blinking: {}, on: {}", yellow_inner.blinking, yellow_on);
+                    if !yellow_inner.blinking {
+                        return;
+                    }
+
+                    if yellow_on {
+                        yellow_inner.output_pin.set_high();
+                    } else {
+                        yellow_inner.output_pin.set_low();
+                    }
+                }
+                yellow_on = !yellow_on;
+
+                thread::sleep(Duration::from_millis(500));
+            }
+        });
     }
 }
 
@@ -105,10 +181,7 @@ impl IO {
             .expect("Failed to get pin")
             .into_output();
 
-        Led {
-            yellow,
-            green
-        }
+        Led::new(yellow, green)
     }
 
     pub fn listen(mut self) -> Receiver<(u8, bool)> {
