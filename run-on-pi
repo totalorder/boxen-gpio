@@ -10,6 +10,11 @@ TARGET_ARCH="aarch64-unknown-linux-gnu"
 BINARY_NAME="boxen-gpio"
 SOURCE_PATH="./target/${TARGET_ARCH}/debug/${BINARY_NAME}"
 
+if [[ "${1:-}" == "--target-host" ]]; then
+  TARGET_HOST="$2"
+  shift 2
+fi
+
 cross build --target="${TARGET_ARCH}"
 rsync "${SOURCE_PATH}" "${TARGET_HOST}:${TARGET_PATH}"
 ssh -t "${TARGET_HOST}" "cd ${TARGET_PATH} && RUST_BACKTRACE=full RUST_BACKTRACE=1 ./${BINARY_NAME}"
