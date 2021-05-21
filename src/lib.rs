@@ -1,5 +1,4 @@
-use rppal::gpio::{Gpio, Trigger, Level, InputPin, OutputPin};
-use std::error::Error;
+use rppal::gpio::{Gpio, Trigger, InputPin, OutputPin};
 use std::thread;
 use crossbeam_channel;
 use crossbeam_channel::{Receiver,Sender};
@@ -7,9 +6,7 @@ use std::time::{Duration, Instant};
 use std::collections::HashMap;
 use std::collections::LinkedList;
 use std::ops::{Add, Sub};
-use std::process::exit;
 use std::sync::{Arc, Mutex};
-use std::fs::read_to_string;
 
 struct InnerBlinkingLed {
     output_pin: OutputPin,
@@ -127,8 +124,7 @@ pub struct IO {
     deadlines: HashMap<u8, Instant>,
     debounce: Duration,
     tx: Sender<(u8, Instant)>,
-    rx: Receiver<(u8, Instant)>,
-    start: Instant
+    rx: Receiver<(u8, Instant)>
 }
 
 impl IO {
@@ -139,8 +135,7 @@ impl IO {
             deadlines: HashMap::new(),
             debounce,
             tx,
-            rx,
-            start: Instant::now()
+            rx
         }
     }
 
@@ -155,7 +150,7 @@ impl IO {
         button
             .set_async_interrupt(
             Trigger::RisingEdge,
-            move |level| {
+            move |_| {
                 tx.send((pin, Instant::now())).expect("Failed to send message")
             })
             .expect("Failed to add callback for button1");
@@ -197,7 +192,7 @@ impl IO {
                             .expect("Deadline expired for invalid button");
                         let is_low = button.is_low();
                         expired_pins.push_back(pin);
-                        tx.send((pin, is_low));
+                        tx.send((pin, is_low)).unwrap();
                     };
                 }
 
