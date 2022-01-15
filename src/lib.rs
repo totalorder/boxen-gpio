@@ -85,7 +85,7 @@ impl Led {
             loop {
                 {
                     let mut yellow_inner = yellow.inner.lock().unwrap();
-                    println!("Yellow blinking: {}, on: {}", yellow_inner.blinking, yellow_on);
+                    // println!("Yellow blinking: {}, on: {}", yellow_inner.blinking, yellow_on);
                     if !yellow_inner.blinking {
                         return;
                     }
